@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="?android:attr/windowBackground"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 🔹 Toolbar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+
+
+        <TextView
+                android:id="@+id/appTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☀️ WeatherApp"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnSearch"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    android:contentDescription="Search"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="?android:textColorPrimary" />
+
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_manage"
+                    android:contentDescription="Settings"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="?android:textColorPrimary" />
+
+                <ImageButton
+                    android:id="@+id/btnTheme"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_day"
+                    android:contentDescription="Toggle Theme"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="?android:textColorPrimary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 🔹 Lokasi & tanggal -->
+        <TextView
+            android:id="@+id/textLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📍 Surabaya"
+            android:textSize="18sp"
+            android:textColor="?android:textColorPrimary"
+            android:layout_marginTop="12dp" />
+
+        <TextView
+            android:id="@+id/textDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📅 Friday, 8 Nov 2025"
+            android:textSize="16sp"
+            android:textColor="?android:textColorSecondary" />
+
+        <!-- 🔹 Cuaca Utama -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="32dp">
+
+            <ImageView
+                android:id="@+id/imageWeatherIcon"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:src="@drawable/ic_clear_day"
+                android:contentDescription="Weather Icon"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/textTemperature"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00°C"
+                android:textSize="64sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:id="@+id/textCondition"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sunny"
+                android:textSize="22sp"
+                android:textColor="@android:color/holo_orange_dark"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/textHighLow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="H:32°C  L:26°C"
+                android:textSize="16sp"
+                android:textColor="?android:textColorSecondary"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <!-- 🔹 Detail Cuaca -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:id="@+id/textHumidity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💧 Humidity: 78%"
+                android:textSize="16sp"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:id="@+id/textWind"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🌬️ Wind: 12 km/h"
+                android:textSize="16sp"
+                android:textColor="?android:textColorPrimary" />
+
+            <TextView
+                android:id="@+id/textPressure"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🌫️ Pressure: 1005 hPa"
+                android:textSize="16sp"
+                android:textColor="?android:textColorPrimary" />
+        </LinearLayout>
+
+        <!-- 🔮 7-Day Forecast -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔮 7-Day Forecast"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="28dp"
+            android:textColor="?android:textColorPrimary" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/forecastRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:nestedScrollingEnabled="false" />
+
+        <!-- 🔘 Tombol tambahan -->
+        <Button
+            android:id="@+id/btnForecast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lihat Prakiraan Lengkap"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@android:color/holo_blue_light"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btnNotify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aktifkan Notifikasi Cuaca"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_orange_light"
+            android:textColor="@android:color/white" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</ScrollView>
