@@ -2,15 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 🔹 Izin yang dibutuhkan aplikasi -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
-
 
     <application
         android:allowBackup="true"
+        android:usesCleartextTraffic="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -18,33 +24,63 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.WeatherApp"
-        tools:targetApi="31">
+        tools:targetApi="34">
+
+        <!-- 🔹 Aktivitas utama -->
         <activity
             android:name=".MainActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="portrait" />
+
+        <!-- 🔹 Aktivitas notifikasi / alarm -->
         <activity
-            android:name=".Notification"
+            android:name=".NotificationActivity"
             android:exported="false" />
+
         <activity
-            android:name=".AlarmeManager"
+            android:name=".AlarmManagerActivity"
             android:exported="false" />
+
+        <!-- 🔹 Aktivitas daftar prakiraan 7 hari -->
         <activity
-            android:name=".Recycleactivity"
+            android:name=".RecycleActivity"
             android:exported="false" />
+
+        <!-- 🔹 Splash screen -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.WeatherApp">
+            android:theme="@style/Theme.WeatherApp.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- 🔹 Service untuk notifikasi cuaca -->
+        <service
+            android:name=".WeatherNotificationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location|dataSync|mediaPlayback" />
+
+        <!-- 🔹 Broadcast Receiver untuk notifikasi & boot -->
+        <receiver
+            android:name=".WeatherReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.example.weatherapp.ACTION_UPDATE_WEATHER" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 🔹 Preloaded Fonts -->
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
+
     </application>
 
 </manifest>

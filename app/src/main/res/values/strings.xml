@@ -1,3 +1,12 @@
 <resources>
-    <string name="app_name">WeatherApp</string>
+    <string name="app_name">☀️ WeatherApp</string>
+    <string name="search">Search</string>
+    <string name="settings">Settings</string>
+    <string name="toggle_theme">Toggle Theme</string>
+    <string name="location_label">📍 Surabaya</string>
+    <string name="date_placeholder">📅 Friday, 8 Nov 2025</string>
+    <string name="weather_icon">Weather Icon</string>
+    <string name="see_full_forecast">Lihat Prakiraan Lengkap</string>
+    <string name="enable_weather_notification">Aktifkan Notifikasi Cuaca</string>
+    <string name="search_city_placeholder">Cari kota…</string>
 </resources>
