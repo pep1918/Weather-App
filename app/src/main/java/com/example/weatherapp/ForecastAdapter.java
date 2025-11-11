@@ -3,47 +3,57 @@ package com.example.weatherapp;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
-public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ViewHolder> {
-    private List<ForecastItem> forecastList;
+public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.VH> {
 
-    public ForecastAdapter(List<ForecastItem> forecastList) {
-        this.forecastList = forecastList;
+    private List<ForecastDay> data;
+
+    public ForecastAdapter(List<ForecastDay> data) {
+        this.data = data;
     }
 
-    @NonNull
-    @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_forecast, parent, false);
-        return new ViewHolder(view);
+    public void submit(List<ForecastDay> newData) {
+        this.data = newData;
+        notifyDataSetChanged();
+    }
+
+    @NonNull @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_forecast_day, parent, false);
+        return new VH(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ForecastItem item = forecastList.get(position);
-        holder.tvDay.setText(item.getDay());
-        holder.tvEmoji.setText(item.getEmoji());
-        holder.tvTemp.setText(item.getTemp());
+    public void onBindViewHolder(@NonNull VH h, int pos) {
+        ForecastDay d = data.get(pos);
+        h.textDay.setText(d.dayLabel);
+        h.imageIcon.setImageResource(WeatherIconMapper.iconFor(d.weatherCode));
+        h.textTempMax.setText(d.tmax + "°");
+        h.textTempMin.setText(d.tmin + "°");
     }
 
     @Override
     public int getItemCount() {
-        return forecastList.size();
+        return data == null ? 0 : data.size();
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvDay, tvEmoji, tvTemp;
-
-        ViewHolder(View itemView) {
-            super(itemView);
-            tvDay = itemView.findViewById(R.id.tvDay);
-            tvEmoji = itemView.findViewById(R.id.tvEmoji);
-            tvTemp = itemView.findViewById(R.id.tvTemp);
+    static class VH extends RecyclerView.ViewHolder {
+        final TextView textDay, textTempMax, textTempMin;
+        final ImageView imageIcon;
+        VH(@NonNull View v) {
+            super(v);
+            textDay = v.findViewById(R.id.textDay);
+            imageIcon = v.findViewById(R.id.imageIcon);
+            textTempMax = v.findViewById(R.id.textTempMax);
+            textTempMin = v.findViewById(R.id.textTempMin);
         }
     }
 }

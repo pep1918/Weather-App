@@ -6,37 +6,29 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import java.util.Locale;
-
 import retrofit2.Response;
 
 public class WeatherWorker extends Worker {
-    public WeatherWorker(@NonNull Context context, @NonNull WorkerParameters params) {
-        super(context, params);
-    }
+    public static final String API_KEY = "856110a69c5f750b2b04f8d1b524b056"; // TODO: ganti
 
-    @NonNull
-    @Override
+    public WeatherWorker(@NonNull Context context, @NonNull WorkerParameters params) { super(context, params); }
+
+    @NonNull @Override
     public Result doWork() {
-        double lat   = getInputData().getDouble("lat", -6.2);
-        double lon   = getInputData().getDouble("lon", 106.8);
-        String apiKey= getInputData().getString("key");
-
         try {
-            OpenWeatherService svc = RetrofitClient.getRetrofitInstance().create(OpenWeatherService.class);
-            Response<OneCallResponse> resp = svc.getOneCall(
-                    lat, lon, "minutely,hourly,alerts", "metric", apiKey, "id"
-            ).execute();
+            City last = WeatherDatabase.getInstance(getApplicationContext()).cityDao().getLastCity();
+            if (last == null) return Result.success();
 
-            if (!resp.isSuccessful() || resp.body() == null) return Result.retry();
+            Response<OneCallResponse> resp = RetrofitClient.api()
+                    .getWeeklyForecast(last.lat, last.lon, "minutely,hourly,alerts", "metric", API_KEY)
+                    .execute();
 
-            OneCallResponse.Daily today = resp.body().daily.get(0);
-            String title = "Cuaca Hari Ini";
-            String text  = String.format(Locale.getDefault(),
-                    "Maks %.0f°, Min %.0f° • %s",
-                    today.temp.max, today.temp.min, today.weather.get(0).description);
-
-            NotificationHelper.showWeatherNotification(getApplicationContext(), title, text);
+            if (resp.isSuccessful() && resp.body() != null && resp.body().daily != null && !resp.body().daily.isEmpty()) {
+                OneCallResponse.Daily today = resp.body().daily.get(0);
+                String cond = (today.weather != null && !today.weather.isEmpty()) ? today.weather.get(0).description : "–";
+                String text = last.name + " • " + Math.round(today.temp.max) + "° / " + Math.round(today.temp.min) + "° • " + cond;
+                NotificationHelper.notifyWeather(getApplicationContext(), "Cuaca Hari Ini", text);
+            }
             return Result.success();
         } catch (Exception e) {
             return Result.retry();

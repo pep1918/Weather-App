@@ -1,9 +1,12 @@
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
-}
+// ---- tambahkan import ini paling atas file app/build.gradle.kts
+import java.util.Properties
+// --------------------------------------------------------------
 
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
+}
 
 android {
     namespace = "com.example.weatherapp"
@@ -15,79 +18,76 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-        debug {
-            // contoh: aktifkan debug logging jika perlu
-            // buildConfigField("Boolean", "LOGGING", "true")
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    // opsional tapi berguna buat findViewById lebih nyaman
     buildFeatures {
         viewBinding = true
+        buildConfig = true   // 🔥 WAJIB agar buildConfigField bisa dipakai
     }
-
-    packaging {
-        resources {
-            // cegah konflik license bila ada
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    // ✅ Baca OPENWEATHER_API_KEY dari local.properties
+    val props = Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) {
+            f.inputStream().use { load(it) }  // <- jangan use(::load)
         }
     }
+    val owmApiKey = props.getProperty("OPENWEATHER_API_KEY") ?: ""
+
+    buildTypes {
+        debug {
+            buildConfigField("String", "OWM_API_KEY", "\"$owmApiKey\"")
+        }
+        release {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("String", "OWM_API_KEY", "\"$owmApiKey\"")
+        }
+    }
+
+    compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { viewBinding = true }
 }
 
 dependencies {
-    // --- Retrofit + Gson ---
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
-    // --- Kotlin Coroutines ---
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // --- Glide (image loader) ---
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.16.0")
 
-    // --- Room (Kotlin) ---
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
 
-    // --- Lottie ---
-    implementation("com.airbnb.android:lottie:6.0.0")
-
-    // --- Google Location services ---
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // --- WorkManager ---
-    implementation("androidx.work:work-runtime:2.9.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
 
-    // --- Material & AndroidX (via version catalog) ---
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.activity)
-    implementation(libs.constraintlayout)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // --- Testing ---
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+        implementation("com.google.android.gms:play-services-location:21.3.0")
+        implementation("com.squareup.retrofit2:retrofit:2.11.0")
+
+        implementation("androidx.cardview:cardview:1.0.0")
+
+
+
+
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="@drawable/bg_teal_gradient"
-    tools:context=".MainActivity">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,168 +11,206 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 🔎 Search placeholder -->
-        <LinearLayout
-            android:id="@+id/searchBar"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_search_bar"
-            android:paddingStart="14dp"
-            android:paddingEnd="10dp"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
+        <TextView
+            android:id="@+id/appTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black" />
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@android:drawable/ic_menu_search"
-                android:tint="?attr/colorOnBackground"
-                android:contentDescription="@string/search" />
+        <!-- Search bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
 
             <EditText
-                android:id="@+id/inputCity"
+                android:id="@+id/editCity"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
-                android:layout_marginStart="10dp"
-                android:hint="@string/search_city_placeholder"
+                android:hint="Cari kota..."
                 android:imeOptions="actionSearch"
-                android:singleLine="true"
-                android:background="@null"/>
+                android:inputType="textCapWords"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@android:drawable/edit_text" />
 
-            <ImageButton
-                android:id="@+id/btnTheme"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                app:srcCompat="@android:drawable/ic_menu_day"
-                app:tint="?attr/colorControlNormal"
-                android:contentDescription="@string/toggle_theme" />
+            <Button
+                android:id="@+id/btnSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:text="Search" />
         </LinearLayout>
 
-        <!-- Lokasi & tanggal -->
+        <!-- Lokasi/Kota Aktif -->
         <TextView
             android:id="@+id/textLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="📍 —"
+            android:text="--"
             android:textSize="18sp"
-            android:textColor="?android:textColorPrimary"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
             android:layout_marginTop="8dp" />
 
-        <TextView
-            android:id="@+id/textDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📅 —"
-            android:textSize="16sp"
-            android:textColor="?android:textColorSecondary" />
-
-        <!-- Cuaca Utama -->
+        <!-- Cuaca utama -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginTop="24dp">
+            android:gravity="center_horizontal"
+            android:layout_marginTop="20dp">
 
             <ImageView
-                android:id="@+id/imageWeatherIcon"
-                android:layout_width="96dp"
+                android:id="@+id/imgIcon"
+                android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:contentDescription="@string/app_name"/>
+                android:src="@drawable/ic_clear_day"
+                android:contentDescription="Weather Icon" />
 
             <TextView
-                android:id="@+id/textTemperature"
+                android:id="@+id/txtTemp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="--°C"
-                android:textSize="64sp"
+                android:textSize="48sp"
                 android:textStyle="bold"
-                android:textColor="?android:textColorPrimary" />
+                android:textColor="@android:color/black"
+                android:layout_marginTop="8dp" />
 
             <TextView
-                android:id="@+id/textCondition"
+                android:id="@+id/txtDesc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="—"
-                android:textSize="22sp"
-                android:textColor="@android:color/holo_orange_dark"
-                android:layout_marginTop="4dp" />
-
-            <TextView
-                android:id="@+id/textHighLow"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="H:--°C  L:--°C"
                 android:textSize="16sp"
-                android:textColor="?android:textColorSecondary"
+                android:textColor="@android:color/darker_gray"
                 android:layout_marginTop="4dp" />
         </LinearLayout>
 
-        <!-- 🔸 Tiga kotak statistik (Humidity/Wind/Pressure) -->
+        <!-- Stat box: Humidity / Wind / Pressure -->
         <LinearLayout
-            android:id="@+id/statsRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
             android:orientation="horizontal"
+            android:layout_marginTop="16dp"
             android:weightSum="3">
 
-            <include
-                android:id="@+id/cardHumidity"
-                layout="@layout/item_stat_card"
+            <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
-            <Space
-                android:layout_width="8dp"
-                android:layout_height="1dp"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
 
-            <include
-                android:id="@+id/cardWind"
-                layout="@layout/item_stat_card"
+                    <TextView
+                        android:text="Humidity"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/txtHumidity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--%"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
-            <Space
-                android:layout_width="8dp"
-                android:layout_height="1dp"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
 
-            <include
-                android:id="@+id/cardPressure"
-                layout="@layout/item_stat_card"
+                    <TextView
+                        android:text="Wind"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/txtWind"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- km/h"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
+
+                    <TextView
+                        android:text="Pressure"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/txtPressure"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- hPa"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
         </LinearLayout>
 
-        <!-- 🔮 7-Day Forecast (grid kotak-kotak) -->
+        <!-- Judul & Grid 7-Day Forecast -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🔮 7-Day Forecast"
-            android:textSize="18sp"
+            android:text="7-Day Forecast"
             android:textStyle="bold"
-            android:layout_marginTop="24dp"
-            android:textColor="?android:textColorPrimary" />
+            android:textSize="16sp"
+            android:layout_marginTop="18dp"
+            android:textColor="@android:color/black" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/forecastRecyclerView"
+            android:id="@+id/recyclerForecast"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:nestedScrollingEnabled="false" />
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:visibility="gone" />
-
     </LinearLayout>
 </ScrollView>

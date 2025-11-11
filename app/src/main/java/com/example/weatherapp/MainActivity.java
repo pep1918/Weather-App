@@ -1,336 +1,213 @@
 package com.example.weatherapp;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.Constraints;
-import androidx.work.Data;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.NetworkType;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
-
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
-import android.view.View;
+import android.text.TextUtils;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.example.weatherapp.Entity.ForecastItem;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView tempTextView, cityTextView, descTextView, humidityTextView, windTextView;
-    private RecyclerView forecastRecyclerView;
-    private ProgressBar loadingBar;
-    private ImageView weatherIcon;
+    private static final int REQ_LOCATION = 101;
 
+    // View
+    private TextView textLocation, txtTemp, txtDesc, txtHumidity, txtWind, txtPressure;
+    private EditText editCity;
+    private Button btnSearch;
+    private ImageView imgIcon;
+    private RecyclerView recyclerForecast;
+
+    // Adapter 7 hari (asumsikan sudah ada ForecastAdapter + ForecastDay)
     private ForecastAdapter forecastAdapter;
-    private final List<ForecastItem> forecastList = new ArrayList<>();
-
-    // === KONFIGURASI ===
-    private static final String API_KEY = "YOUR_API_KEY"; // <— Ganti dengan key kamu
-    private static final int LOCATION_REQUEST_CODE = 100;
-    private static final int NOTIF_REQUEST_CODE = 1012;
-
-    // Lokasi default (Surabaya) bila izin ditolak
-    private double latitude = -7.2575;
-    private double longitude = 112.7521;
-
-    private FusedLocationProviderClient fusedLocationClient;
-    private TtsSpeaker tts = new TtsSpeaker();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 🌑 Mode gelap/terang otomatis
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        bindViews();
+        setupRecycler();
+        setupSearch();
 
-        // 🔧 Init view
-        tempTextView = findViewById(R.id.textTemperature);
-        cityTextView = findViewById(R.id.textCity);
-        descTextView = findViewById(R.id.textDescription);
-        humidityTextView = findViewById(R.id.textHumidity);
-        windTextView = findViewById(R.id.textWind);
-        weatherIcon = findViewById(R.id.imageWeatherIcon);
-        forecastRecyclerView = findViewById(R.id.recyclerForecast);
-        loadingBar = findViewById(R.id.progressBar);
-
-        forecastRecyclerView.setLayoutManager(
-                new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        );
-        forecastAdapter = new ForecastAdapter(forecastList);
-        forecastRecyclerView.setAdapter(forecastAdapter);
-
-        // 🔔 channel notifikasi + izin (Android 13+)
-        NotificationHelper.ensureChannel(this);
-        if (Build.VERSION.SDK_INT >= 33 &&
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIF_REQUEST_CODE);
-        }
-
-        // 🔊 TTS
-        tts.init(this, null);
-
-        // 📍 Lokasi
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        getLastLocationOrRequest();
+        // Coba load kota terakhir; jika tidak ada -> auto lokasi
+        loadLastOrDetectLocation();
     }
 
-    @Override
-    protected void onDestroy() {
-        tts.shutdown();
-        super.onDestroy();
+    private void bindViews() {
+        textLocation   = findViewById(R.id.textLocation);
+        txtTemp        = findViewById(R.id.txtTemp);
+        txtDesc        = findViewById(R.id.txtDesc);
+        txtHumidity    = findViewById(R.id.txtHumidity);
+        txtWind        = findViewById(R.id.txtWind);
+        txtPressure    = findViewById(R.id.txtPressure);
+        imgIcon        = findViewById(R.id.imgIcon);
+
+        editCity       = findViewById(R.id.editCity);
+        btnSearch      = findViewById(R.id.btnSearch);
+        recyclerForecast = findViewById(R.id.recyclerForecast);
     }
 
-    // =======================
-    // Lokasi & Reverse Geocode
-    // =======================
-    @SuppressLint("MissingPermission")
-    private void getLastLocationOrRequest() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED) {
+    private void setupRecycler() {
+        // Grid 7 kolom (7-day)
+        recyclerForecast.setLayoutManager(new GridLayoutManager(this, 7));
+        forecastAdapter = new ForecastAdapter(new java.util.ArrayList<>());
+        recyclerForecast.setAdapter(forecastAdapter);
+    }
 
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
-                    LOCATION_REQUEST_CODE
-            );
-            // Lanjutkan dengan default (tanpa lokasi) untuk pengalaman pertama
-            loadDataWithCurrentCoords();
+    private void setupSearch() {
+        btnSearch.setOnClickListener(v -> trySearchCity());
+        editCity.setOnEditorActionListener((v, actionId, event) -> {
+            boolean ime = actionId == EditorInfo.IME_ACTION_SEARCH;
+            boolean enter = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN;
+            if (ime || enter) {
+                trySearchCity();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void trySearchCity() {
+        final String q = editCity.getText() != null ? editCity.getText().toString().trim() : "";
+        if (TextUtils.isEmpty(q)) {
+            Toast.makeText(this, "Masukkan nama kota", Toast.LENGTH_SHORT).show();
             return;
         }
+        // Cari lat/lon via Open-Meteo Geocoding
+        WeatherServiceOM.searchCityLatLon(q, new WeatherServiceOM.Result<GeoResponse.Result>() {
+            @Override public void ok(GeoResponse.Result res) {
+                // Simpan ke Room (opsional — kamu sudah punya City/CityDao/WeatherDatabase)
+                new Thread(() -> {
+                    try {
+                        WeatherDatabase.getInstance(MainActivity.this)
+                                .cityDao().save(new City(res.name, res.latitude, res.longitude));
+                    } catch (Throwable ignored) {}
+                }).start();
 
-        fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-            if (location != null) {
-                setCoordsAndLoad(location);
-            } else {
-                requestSingleFreshLocation();
+                // Load cuaca 7 hari
+                loadFromLatLon(res.latitude, res.longitude, res.name);
             }
-        }).addOnFailureListener(e -> {
-            Toast.makeText(this, "Gagal mendapatkan lokasi terakhir", Toast.LENGTH_SHORT).show();
-            loadDataWithCurrentCoords();
-        });
-    }
-
-    @SuppressLint("MissingPermission")
-    private void requestSingleFreshLocation() {
-        var request = new com.google.android.gms.location.LocationRequest.Builder(10_000L)
-                .setMinUpdateIntervalMillis(5_000L)
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .setMaxUpdates(1) // sekali ambil, lalu berhenti
-                .build();
-
-        fusedLocationClient.requestLocationUpdates(request, new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                Location last = locationResult.getLastLocation();
-                if (last != null) setCoordsAndLoad(last);
-                fusedLocationClient.removeLocationUpdates(this);
-            }
-        }, Looper.getMainLooper());
-    }
-
-    private void setCoordsAndLoad(Location loc) {
-        latitude = loc.getLatitude();
-        longitude = loc.getLongitude();
-        loadDataWithCurrentCoords();
-        scheduleWeatherWorker(latitude, longitude); // jadwalkan notifikasi berkala
-    }
-
-    private void loadDataWithCurrentCoords() {
-        getCurrentWeather();
-        getForecast7Days();
-    }
-
-    private String reverseCity(double lat, double lon) {
-        try {
-            Geocoder g = new Geocoder(this, Locale.getDefault());
-            List<Address> list = g.getFromLocation(lat, lon, 1);
-            if (list != null && !list.isEmpty()) {
-                Address a = list.get(0);
-                if (a.getLocality() != null) return a.getLocality();
-                if (a.getSubAdminArea() != null) return a.getSubAdminArea();
-                if (a.getAdminArea() != null) return a.getAdminArea();
-            }
-        } catch (Exception ignored) {}
-        return "Lokasi Anda";
-    }
-
-    // =======================
-    // Current Weather + TTS + Notif
-    // =======================
-    private void getCurrentWeather() {
-        loadingBar.setVisibility(View.VISIBLE);
-
-        OpenWeatherService service = RetrofitClient.service();
-        Call<WeatherResponse> call = service.currentByCoord(latitude, longitude, API_KEY, "metric", "id");
-
-        call.enqueue(new Callback<WeatherResponse>() {
-            @Override
-            public void onResponse(Call<WeatherResponse> call, Response<WeatherResponse> response) {
-                loadingBar.setVisibility(View.GONE);
-                if (!response.isSuccessful() || response.body() == null) {
-                    Toast.makeText(MainActivity.this, "Gagal memuat data cuaca", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                WeatherResponse data = response.body();
-
-                String cityName = data.getName();
-                if (cityName == null || cityName.trim().isEmpty()) {
-                    cityName = reverseCity(latitude, longitude); // pencocokan lokasi
-                }
-                cityTextView.setText(cityName);
-                tempTextView.setText(String.format(Locale.getDefault(),"%.0f°C", data.getMain().getTemp()));
-                descTextView.setText(data.getWeather().get(0).getDescription());
-                humidityTextView.setText("Kelembapan: " + data.getMain().getHumidity() + "%");
-                windTextView.setText("Angin: " + data.getWind().getSpeed() + " m/s");
-
-                String icon = data.getWeather().get(0).getIcon();
-                int resId = getResources().getIdentifier("ic_" + icon, "drawable", getPackageName());
-                if (resId != 0) weatherIcon.setImageResource(resId);
-
-                // 🔔 Notif ringkasan + 🔊 TTS
-                String notifText = "Suhu: " + String.format(Locale.getDefault(),"%.0f", data.getMain().getTemp())
-                        + "°C, " + data.getWeather().get(0).getDescription();
-                NotificationHelper.showWeatherNotification(MainActivity.this, cityName, notifText);
-
-                tts.speak("Cuaca di " + cityName + ". "
-                        + data.getWeather().get(0).getDescription()
-                        + ". Suhu " + String.format(Locale.getDefault(),"%.0f", data.getMain().getTemp())
-                        + " derajat.");
-            }
-
-            @Override
-            public void onFailure(Call<WeatherResponse> call, Throwable t) {
-                loadingBar.setVisibility(View.GONE);
-                Toast.makeText(MainActivity.this, "Kesalahan koneksi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override public void err(Throwable t) {
+                Toast.makeText(MainActivity.this, "Kota tidak ditemukan", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // =======================
-    // 7-Day Forecast (One Call)
-    // =======================
-    private void getForecast7Days() {
-        OpenWeatherService service = RetrofitClient.service();
-        Call<OneCallResponse> call = service.oneCall(
-                latitude, longitude,
-                "minutely,hourly,alerts",
-                "metric",
-                API_KEY,
-                "id"
-        );
+    private void loadLastOrDetectLocation() {
+        // Ambil kota terakhir dari Room
+        new Thread(() -> {
+            City last = null;
+            try {
+                last = WeatherDatabase.getInstance(MainActivity.this).cityDao().getLastCity();
+            } catch (Throwable ignored) {}
 
-        call.enqueue(new Callback<OneCallResponse>() {
-            @Override
-            public void onResponse(Call<OneCallResponse> call, Response<OneCallResponse> response) {
-                if (!response.isSuccessful() || response.body()==null) {
-                    Toast.makeText(MainActivity.this, "Gagal memuat prakiraan", Toast.LENGTH_SHORT).show();
-                    return;
+            final City lastCity = last;
+            runOnUiThread(() -> {
+                if (lastCity != null) {
+                    loadFromLatLon(lastCity.lat, lastCity.lon, lastCity.name);
+                } else {
+                    requestOrFetchLocation();
                 }
+            });
+        }).start();
+    }
 
-                forecastList.clear();
-                List<OneCallResponse.Daily> daily = response.body().daily;
-                int max = Math.min(7, daily.size());
-                SimpleDateFormat df = new SimpleDateFormat("EEE, dd MMM", new Locale("id"));
-
-                for (int i = 0; i < max; i++) {
-                    OneCallResponse.Daily d = daily.get(i);
-                    String day = df.format(d.dt * 1000L);
-                    // Map ke ForecastItem milikmu (silakan sesuaikan ctor/field jika beda)
-                    ForecastItem item = new ForecastItem(
-                            d.dt,
-                            day,
-                            d.weather.get(0).description,
-                            d.temp.max,
-                            d.temp.min,
-                            d.weather.get(0).icon
-                    );
-                    forecastList.add(item);
-                }
-                forecastAdapter.notifyDataSetChanged();
+    private void requestOrFetchLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                    REQ_LOCATION);
+            return;
+        }
+        // Izin sudah OK -> ambil lokasi terakhir
+        new LocationHelper(this).lastKnown(new LocationHelper.Callback() {
+            @Override public void onLocation(double lat, double lon) {
+                loadFromLatLon(lat, lon, "Lokasi Saya");
             }
-
-            @Override
-            public void onFailure(Call<OneCallResponse> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "Gagal memuat prakiraan", Toast.LENGTH_SHORT).show();
+            @Override public void onError(Throwable t) {
+                Toast.makeText(MainActivity.this, "Gagal ambil lokasi", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // =======================
-    // Jadwal notifikasi berkala (3 jam)
-    // =======================
-    private void scheduleWeatherWorker(double lat, double lon) {
-        Data input = new Data.Builder()
-                .putDouble("lat", lat)
-                .putDouble("lon", lon)
-                .putString("key", API_KEY)
-                .build();
-
-        Constraints cons = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresBatteryNotLow(true)
-                .build();
-
-        PeriodicWorkRequest req =
-                new PeriodicWorkRequest.Builder(WeatherWorker.class, java.time.Duration.ofHours(3))
-                        .setConstraints(cons)
-                        .setInputData(input)
-                        .build();
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "weather_worker",
-                ExistingPeriodicWorkPolicy.UPDATE,
-                req
-        );
+    // Ambil current + 7 hari dari Open-Meteo dan render ke UI
+    private void loadFromLatLon(double lat, double lon, String displayName) {
+        WeatherServiceOM.fetch7Days(lat, lon, new WeatherServiceOM.Result<WeatherResponseOM>() {
+            @Override public void ok(WeatherResponseOM data) {
+                renderCurrent(displayName, data);
+                render7Days(data);
+            }
+            @Override public void err(Throwable t) {
+                Toast.makeText(MainActivity.this, "Gagal memuat cuaca", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    // ===== Izin =====
+    private void renderCurrent(String name, WeatherResponseOM data) {
+        textLocation.setText(name);
+
+        if (data != null && data.current != null) {
+            long t = Math.round(data.current.temperature_2m);
+            txtTemp.setText(t + "°C");
+            txtDesc.setText(WeatherIconMapper.describe(data.current.weather_code));
+
+            int hum = data.current.relative_humidity_2m != null
+                    ? data.current.relative_humidity_2m.intValue()
+                    : 0;
+
+            int wind = data.current.wind_speed_10m != null
+                    ? (int) Math.round(data.current.wind_speed_10m)
+                    : 0;
+
+            int pres = data.current.pressure_msl != null
+                    ? (int) Math.round(data.current.pressure_msl)
+                    : 0;
+
+            txtHumidity.setText(hum + "%");
+            txtWind.setText(wind + " km/h");
+            txtPressure.setText(pres + " hPa");
+
+            // (opsional) ganti ikon berdasarkan weather_code jika kamu punya drawable mapping sendiri
+            // imgIcon.setImageResource( ... );
+        }
+    }
+
+    private void render7Days(WeatherResponseOM data) {
+        if (data == null || data.daily == null || data.daily.time == null) {
+            forecastAdapter.submit(java.util.Collections.emptyList());
+            return;
+        }
+        List<ForecastDay> items = WeatherMapper.toForecastDays(data.daily);
+        forecastAdapter.submit(items);
+    }
+
+    // Callback permission lokasi
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == LOCATION_REQUEST_CODE) {
-            boolean granted = false;
-            for (int r : grantResults) if (r == PackageManager.PERMISSION_GRANTED) { granted = true; break; }
-            if (granted) {
-                getLastLocationOrRequest();
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] perms, @NonNull int[] res) {
+        super.onRequestPermissionsResult(requestCode, perms, res);
+        if (requestCode == REQ_LOCATION) {
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) {
+                requestOrFetchLocation();
             } else {
-                Toast.makeText(this, "Izin lokasi diperlukan untuk cuaca otomatis", Toast.LENGTH_SHORT).show();
-                loadDataWithCurrentCoords(); // tetap jalan dengan default
+                Toast.makeText(this, "Izin lokasi ditolak", Toast.LENGTH_SHORT).show();
             }
         }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }
