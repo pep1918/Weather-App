@@ -70,12 +70,12 @@ class MainActivity : ComponentActivity() {
             ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mutableListOf())
         binding.editCity.setAdapter(dropdownAdapter)
 
-        // Input listener: update query dan kirim notifikasi otomatis
+
         binding.editCity.addTextChangedListener {
             vm.onQueryChanged(it?.toString().orEmpty())
         }
 
-        // Klik suggestion manual
+
         binding.editCity.setOnItemClickListener { _, _, pos, _ ->
             val geo = lastSuggestions.getOrNull(pos) ?: return@setOnItemClickListener
             vm.selectLocation(geo)
@@ -86,12 +86,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Tombol Cari
+
         binding.btnSearch.setOnClickListener {
             vm.onQueryChanged(binding.editCity.text?.toString().orEmpty())
         }
 
-        // Observasi suggestions → tampilkan dropdown + auto-notify
+
         scope.launch {
             vm.suggestions.collectLatest { list ->
                 lastSuggestions = list
@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Observasi forecast → update UI dan kirim notifikasi auto
+
         scope.launch {
             vm.forecast.collectLatest { f ->
                 val night = repo.isNight(f?.current_weather?.is_day)
@@ -212,7 +212,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // --- logic aman sebelum notify ---
+
     private fun ensureNotificationPermissionThenNotify() {
         if (Build.VERSION.SDK_INT < 33) {
             showWeatherNotificationSafely()
