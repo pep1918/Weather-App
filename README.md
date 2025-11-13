@@ -14,7 +14,7 @@ Aplikasi cuaca sederhana yang dibangun menggunakan **Kotlin** dan **Java**, mema
 
 * **Kotlin**
 * **Java**
-* **OpenMeteo API** (Gratis, tanpa API key)
+* **OpenMeteo API** 
 
 ---
 
