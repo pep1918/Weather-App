@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_weather_gradient">
@@ -16,16 +17,32 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <TextView
-                android:id="@+id/appTitle"
-                android:layout_width="wrap_content"
+            <!-- HEADER: Logo + Judul -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/app_name"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"
-                android:layout_gravity="center_horizontal" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
+                <ImageView
+                    android:id="@+id/imgLogo"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/weather_img"
+                    android:contentDescription="@string/app_name" />
+
+                <TextView
+                    android:id="@+id/appTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/app_name"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
+
+            <!-- Card Input Kota -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -37,14 +54,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="8dp">
+                    android:padding="8dp"
+                    android:gravity="center_vertical">
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilCity"
                         style="@style/Widget.Material3.TextInputLayout.FilledBox"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="4"
-                        android:hint="Cari Kota">
+                        android:hint="Search Region">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/editCity"
@@ -59,11 +78,12 @@
                         style="@style/Widget.Material3.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Cari"
-                        android:layout_marginStart="8dp" />
+                        android:layout_marginStart="8dp"
+                        android:text="Cari" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Lokasi -->
             <TextView
                 android:id="@+id/textLocation"
                 android:layout_width="wrap_content"
@@ -71,10 +91,11 @@
                 android:text="--"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="@android:color/white"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp" />
 
+            <!-- Cuaca saat ini -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -96,7 +117,7 @@
                     android:text="--°C"
                     android:textSize="48sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@android:color/white"
                     android:layout_marginTop="8dp" />
 
                 <TextView
@@ -105,10 +126,11 @@
                     android:layout_height="wrap_content"
                     android:text="–"
                     android:textSize="16sp"
-                    android:textColor="@android:color/darker_gray"
+                    android:textColor="@android:color/black"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
 
+            <!-- Info singkat: humidity / wind / pressure -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -117,6 +139,7 @@
                 android:weightSum="3"
                 android:layout_marginTop="16dp">
 
+                <!-- Humidity -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -138,7 +161,7 @@
                             android:text="Humidity"
                             android:textStyle="bold"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp"/>
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/txtHumidity"
@@ -146,10 +169,11 @@
                             android:layout_height="wrap_content"
                             android:text="--%"
                             android:textSize="14sp"
-                            android:textColor="@android:color/darker_gray"/>
+                            android:textColor="@android:color/darker_gray" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <!-- Wind -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -171,7 +195,7 @@
                             android:text="Wind"
                             android:textStyle="bold"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp"/>
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/txtWind"
@@ -179,10 +203,11 @@
                             android:layout_height="wrap_content"
                             android:text="-- km/h"
                             android:textSize="14sp"
-                            android:textColor="@android:color/darker_gray"/>
+                            android:textColor="@android:color/darker_gray" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <!-- Pressure -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -204,7 +229,7 @@
                             android:text="Pressure"
                             android:textStyle="bold"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp"/>
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/txtPressure"
@@ -212,27 +237,30 @@
                             android:layout_height="wrap_content"
                             android:text="-- hPa"
                             android:textSize="14sp"
-                            android:textColor="@android:color/darker_gray"/>
+                            android:textColor="@android:color/darker_gray" />
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
             </LinearLayout>
 
+            <!-- Judul 7 hari -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="7-Day Forecast"
                 android:textStyle="bold"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textColor="@android:color/black"
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="4dp" />
 
+            <!-- RecyclerView Forecast -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerForecast"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"/>
+                android:nestedScrollingEnabled="false" />
         </LinearLayout>
     </ScrollView>
+
 </FrameLayout>

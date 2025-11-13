@@ -70,11 +70,11 @@ class MainActivity : ComponentActivity() {
             ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mutableListOf())
         binding.editCity.setAdapter(dropdownAdapter)
 
-
-        binding.editCity.addTextChangedListener {
-            vm.onQueryChanged(it?.toString().orEmpty())
+        // Hint "Cari Kota" hilang ketika user mengetik
+        binding.editCity.addTextChangedListener { text ->
+            binding.tilCity.hint = if (text.isNullOrEmpty()) "Cari Kota" else ""
+            vm.onQueryChanged(text?.toString().orEmpty())
         }
-
 
         binding.editCity.setOnItemClickListener { _, _, pos, _ ->
             val geo = lastSuggestions.getOrNull(pos) ?: return@setOnItemClickListener
@@ -86,12 +86,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
         binding.btnSearch.setOnClickListener {
             vm.onQueryChanged(binding.editCity.text?.toString().orEmpty())
         }
 
-
+        // Observasi suggestions (kota)
         scope.launch {
             vm.suggestions.collectLatest { list ->
                 lastSuggestions = list
@@ -109,7 +108,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
+        // Observasi forecast cuaca
         scope.launch {
             vm.forecast.collectLatest { f ->
                 val night = repo.isNight(f?.current_weather?.is_day)
@@ -121,7 +120,15 @@ class MainActivity : ComponentActivity() {
                 val cur = f?.current_weather
                 val icon = repo.iconFor(cur?.weathercode ?: 3, night)
                 binding.imgIcon.setImageResource(icon)
-                binding.txtTemp.text = cur?.temperature?.roundToInt()?.let { "$it°C" } ?: "--°C"
+
+                // Animasi kecil di icon tiap update (opsional)
+                binding.imgIcon.animate()
+                    .rotationBy(360f)
+                    .setDuration(600L)
+                    .start()
+
+                binding.txtTemp.text =
+                    cur?.temperature?.roundToInt()?.let { "$it°C" } ?: "--°C"
                 binding.textLocation.text =
                     binding.editCity.text?.toString().orEmpty().ifEmpty { "--" }
                 binding.txtDesc.text = when (cur?.weathercode) {
@@ -131,12 +138,33 @@ class MainActivity : ComponentActivity() {
                     else -> "Berawan"
                 }
 
+                // Ganti background (siang / malam / hujan) + animasi
+                if (cur != null) {
+                    updateBackgroundWithAnimation(
+                        isNight = night,
+                        weatherCode = cur.weathercode
+                    )
+                }
+
                 val hourly = f?.hourly
-                val hum = cur?.time?.let { repo.matchHourlyValue(it, hourly?.time, hourly?.relativehumidity_2m) }
-                val pres = cur?.time?.let { repo.matchHourlyValue(it, hourly?.time, hourly?.surface_pressure) }
+                val hum = cur?.time?.let {
+                    repo.matchHourlyValue(
+                        it,
+                        hourly?.time,
+                        hourly?.relativehumidity_2m
+                    )
+                }
+                val pres = cur?.time?.let {
+                    repo.matchHourlyValue(
+                        it,
+                        hourly?.time,
+                        hourly?.surface_pressure
+                    )
+                }
                 binding.txtHumidity.text = hum?.roundToInt()?.let { "$it%" } ?: "--%"
                 binding.txtPressure.text = pres?.roundToInt()?.let { "$it hPa" } ?: "-- hPa"
-                binding.txtWind.text = cur?.windspeed?.roundToInt()?.let { "$it km/h" } ?: "-- km/h"
+                binding.txtWind.text =
+                    cur?.windspeed?.roundToInt()?.let { "$it km/h" } ?: "-- km/h"
 
                 val d = f?.daily
                 if (d != null && d.time.isNotEmpty()) {
@@ -157,6 +185,31 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Background berubah (siang / malam / hujan) + animasi fade */
+    private fun updateBackgroundWithAnimation(isNight: Boolean, weatherCode: Int) {
+        val isRain = when (weatherCode) {
+            in 51..67,
+            in 80..82,
+            in 61..65 -> true
+            else -> false
+        }
+
+        val bgRes = when {
+            isRain -> R.drawable.bg_weather_rain
+            isNight -> R.drawable.bg_weather_gradient_night
+            else -> R.drawable.bg_weather_gradient
+        }
+
+        val root = binding.rootContainer
+        root.animate().cancel()
+        root.alpha = 0f
+        root.setBackgroundResource(bgRes)
+        root.animate()
+            .alpha(1f)
+            .setDuration(600L)
+            .start()
     }
 
     // --- izin notifikasi ---
@@ -211,7 +264,6 @@ class MainActivity : ComponentActivity() {
             })
         }
     }
-
 
     private fun ensureNotificationPermissionThenNotify() {
         if (Build.VERSION.SDK_INT < 33) {

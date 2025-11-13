@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rotate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromDegrees="25"
+    android:toDegrees="25"
+    android:pivotX="50%"
+    android:pivotY="50%">
+    <shape android:shape="rectangle">
+        <size android:width="8dp" android:height="8dp"/>
+        <!-- dash stroke = garis putus-putus jadi butiran hujan -->
+        <stroke
+            android:width="2dp"
+            android:color="#66FFFFFF"
+            android:dashWidth="10dp"
+            android:dashGap="12dp"/>
+        <solid android:color="@android:color/transparent"/>
+    </shape>
+</rotate>
