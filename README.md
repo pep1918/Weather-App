@@ -48,8 +48,3 @@ gradlew build
 
 * Sambungkan perangkat Android atau gunakan emulator
 * Klik tombol **Run ▶** di Android Studio
-
----
-
-
-Proyek ini mengikuti lisensi dari repository aslinya. Jika belum ada, tambahkan lisensi sesuai kebutuhan.
