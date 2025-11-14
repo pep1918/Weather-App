@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -22,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.weatherapp.databinding.ActivityMainBinding
+import com.google.android.material.chip.Chip
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
@@ -30,18 +32,32 @@ import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
+    // ViewModel, repo & adapter cuaca
     private val vm: MainViewModel by viewModels()
     private lateinit var binding: ActivityMainBinding
     private val repo = WeatherRepository()
     private val gridAdapter = DailyAdapter()
 
+    // Scope untuk collect Flow
     private val scope = MainScope()
 
+    // State suggestion & notifikasi
     private var lastSuggestions: List<GeoResult> = emptyList()
     private var lastNotifiedQuery: String = ""
     private var pendingAutoNotify: Boolean = false
 
-    // launcher izin notifikasi
+    // ------------------------------
+    //        RIWAYAT PENCARIAN
+    // ------------------------------
+    private lateinit var prefs: SharedPreferences
+    private val searchHistory: MutableList<String> = mutableListOf()
+
+    private val PREF_NAME = "weather_prefs"
+    private val KEY_HISTORY = "search_history"
+    private val MAX_HISTORY_SIZE = 10
+    // ------------------------------
+
+    // Launcher izin notifikasi
     private val requestNotifPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -59,7 +75,12 @@ class MainActivity : ComponentActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // RecyclerView untuk 7-day forecast
+        // Inisialisasi SharedPreferences & load riwayat
+        prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+        loadSearchHistoryFromPrefs()
+        renderSearchHistoryChips()
+
+        // RecyclerView 7-day forecast
         binding.recyclerForecast.apply {
             layoutManager = GridLayoutManager(this@MainActivity, 7)
             adapter = gridAdapter
@@ -70,15 +91,23 @@ class MainActivity : ComponentActivity() {
             ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mutableListOf())
         binding.editCity.setAdapter(dropdownAdapter)
 
-        // Hint "Cari Kota" hilang ketika user mengetik
+        // Hint "Search Region" hilang saat user mengetik
         binding.editCity.addTextChangedListener { text ->
-            binding.tilCity.hint = if (text.isNullOrEmpty()) "Cari Kota" else ""
+            binding.tilCity.hint = if (text.isNullOrEmpty()) "Search Region" else ""
             vm.onQueryChanged(text?.toString().orEmpty())
         }
 
+        // User memilih suggestion dari dropdown
         binding.editCity.setOnItemClickListener { _, _, pos, _ ->
             val geo = lastSuggestions.getOrNull(pos) ?: return@setOnItemClickListener
             vm.selectLocation(geo)
+
+            val selectedText = "${geo.name}, ${geo.country}"
+            binding.editCity.setText(selectedText)
+            binding.editCity.setSelection(selectedText.length)
+
+            addQueryToHistory(selectedText)
+
             scope.launch {
                 vm.forecast.collectLatest { f ->
                     if (f != null) ensureNotificationPermissionThenNotify()
@@ -86,8 +115,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Tombol "Cari" ditekan
         binding.btnSearch.setOnClickListener {
-            vm.onQueryChanged(binding.editCity.text?.toString().orEmpty())
+            val q = binding.editCity.text?.toString().orEmpty()
+            vm.onQueryChanged(q)
+            addQueryToHistory(q)
         }
 
         // Observasi suggestions (kota)
@@ -97,6 +129,7 @@ class MainActivity : ComponentActivity() {
                 dropdownAdapter.clear()
                 dropdownAdapter.addAll(list.map { "${it.name}, ${it.country}" })
                 dropdownAdapter.notifyDataSetChanged()
+
                 if (list.isNotEmpty()) binding.editCity.showDropDown()
 
                 val q = binding.editCity.text?.toString().orEmpty()
@@ -104,6 +137,10 @@ class MainActivity : ComponentActivity() {
                     lastNotifiedQuery = q
                     pendingAutoNotify = true
                     vm.selectLocation(list.first())
+
+                    // opsional: simpan suggestion pertama sebagai riwayat
+                    val firstText = "${list.first().name}, ${list.first().country}"
+                    addQueryToHistory(firstText)
                 }
             }
         }
@@ -121,7 +158,7 @@ class MainActivity : ComponentActivity() {
                 val icon = repo.iconFor(cur?.weathercode ?: 3, night)
                 binding.imgIcon.setImageResource(icon)
 
-                // Animasi kecil di icon tiap update (opsional)
+                // Animasi icon
                 binding.imgIcon.animate()
                     .rotationBy(360f)
                     .setDuration(600L)
@@ -131,6 +168,7 @@ class MainActivity : ComponentActivity() {
                     cur?.temperature?.roundToInt()?.let { "$it°C" } ?: "--°C"
                 binding.textLocation.text =
                     binding.editCity.text?.toString().orEmpty().ifEmpty { "--" }
+
                 binding.txtDesc.text = when (cur?.weathercode) {
                     0 -> if (night) "Cerah (malam)" else "Cerah"
                     in 1..3 -> if (night) "Cerah berawan (malam)" else "Cerah berawan"
@@ -138,7 +176,7 @@ class MainActivity : ComponentActivity() {
                     else -> "Berawan"
                 }
 
-                // Ganti background (siang / malam / hujan) + animasi
+                // Background dinamis
                 if (cur != null) {
                     updateBackgroundWithAnimation(
                         isNight = night,
@@ -187,7 +225,71 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Background berubah (siang / malam / hujan) + animasi fade */
+    // --------------------------------------------------------------------
+    //                    RIWAYAT PENCARIAN
+    // --------------------------------------------------------------------
+
+    /** Load riwayat dari SharedPreferences ke list */
+    private fun loadSearchHistoryFromPrefs() {
+        val raw = prefs.getString(KEY_HISTORY, "") ?: ""
+        if (raw.isNotEmpty()) {
+            val items = raw.split("|").filter { it.isNotBlank() }
+            searchHistory.clear()
+            searchHistory.addAll(items)
+        }
+    }
+
+    /** Simpan riwayat ke SharedPreferences */
+    private fun saveSearchHistoryToPrefs() {
+        val joined = searchHistory.joinToString("|")
+        prefs.edit().putString(KEY_HISTORY, joined).apply()
+    }
+
+    /** Tambahkan query ke riwayat + batasi ukuran list */
+    private fun addQueryToHistory(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) return
+
+        // hapus jika sudah ada (biar tidak dobel)
+        searchHistory.remove(q)
+        // tambahkan di paling depan (terbaru)
+        searchHistory.add(0, q)
+
+        // batasi jumlah maksimum riwayat (pakai removeAt, aman untuk API 24+)
+        while (searchHistory.size > MAX_HISTORY_SIZE) {
+            searchHistory.removeAt(searchHistory.size - 1)
+        }
+
+        saveSearchHistoryToPrefs()
+        renderSearchHistoryChips()
+    }
+
+    /** Render searchHistory jadi chip di chipGroupHistory */
+    private fun renderSearchHistoryChips() {
+        val group = binding.chipGroupHistory
+        group.removeAllViews()
+
+        searchHistory.forEach { text ->
+            val chip = Chip(this).apply {
+                this.text = text
+                isCheckable = false
+                isClickable = true
+
+                setOnClickListener {
+                    binding.editCity.setText(text)
+                    binding.editCity.setSelection(text.length)
+                    vm.onQueryChanged(text)
+                }
+            }
+            group.addView(chip)
+        }
+    }
+
+    // --------------------------------------------------------------------
+    //           BACKGROUND + IZIN & NOTIFIKASI CUACA
+    // --------------------------------------------------------------------
+
+    /** Background berubah (siang / malam / hujan) + animasi */
     private fun updateBackgroundWithAnimation(isNight: Boolean, weatherCode: Int) {
         val isRain = when (weatherCode) {
             in 51..67,
@@ -212,11 +314,11 @@ class MainActivity : ComponentActivity() {
             .start()
     }
 
-    // --- izin notifikasi ---
     private fun needsPostNotifPermission(): Boolean =
         Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
 
     private fun shouldShowPostNotifRationale(): Boolean =
@@ -294,7 +396,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // --- Notifikasi cuaca utama ---
+    // Notifikasi cuaca
     @SuppressLint("MissingPermission")
     private fun showWeatherNotification() {
         val f = vm.forecast.value ?: return
